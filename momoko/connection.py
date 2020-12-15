@@ -419,7 +419,7 @@ class Pool(object):
         See :py:meth:`momoko.Connection.mogrify` for documentation about the
         parameters.
         """
-        return self._operate(Connection.mogrify, args, kwargs, async=False)
+        return self._operate(Connection.mogrify, args, kwargs, use_async=False)
 
     def register_hstore(self, *args, **kwargs):
         """
@@ -456,7 +456,7 @@ class Pool(object):
         self.conns.empty()
         self.closed = True
 
-    def _operate(self, method, args=(), kwargs=None, async=True, keep=False, connection=None):
+    def _operate(self, method, args=(), kwargs=None, use_async=True, keep=False, connection=None):
         kwargs = kwargs or {}
         future = Future()
 
@@ -478,7 +478,7 @@ class Pool(object):
                 log.debug("Method failed synchronously")
                 return self._retry(retry, when_available, conn, keep, future)
 
-            if not async:
+            if not use_async:
                 future.set_result(future_or_result)
                 if not keep:
                     self.putconn(conn)
@@ -604,7 +604,7 @@ class Pool(object):
                     if conn.closed:
                         ping_future.set_exception(self._no_conn_available_error)
                     else:
-                        ping_future_set_exc_info(future, sys.exc_info())
+                        future_set_exc_info(ping_future, sys.exc_info())
                     self.putconn(conn)
                 else:
                     ping_future.set_result(conn)
@@ -886,7 +886,7 @@ class Connection(object):
                 if auto_rollback and not self.closed:
                     self._rollback(transaction_future, error)
                 else:
-                    transaction_future_set_exc_info(future, sys.exc_info())
+                    future_set_exc_info(future, sys.exc_info())
                 return
 
             try:
